@@ -1,0 +1,652 @@
+<html>
+<head>
+<title>multi-tetris</title>
+<style>
+
+body {
+	margin: 0;
+}
+ .cell {
+	position: absolute;	
+ 	background-color: white;
+ 	z-index: 1;
+ 	border: 1px solid gray;
+ }
+
+#info{
+	position: absolute;
+	z-index: 2;
+	width: auto;
+	height: auto;
+	padding: 10px;
+	background-color: white;
+	margin: auto;
+	opacity: .8;
+	font-family: arial;
+	font-size: 16pt;
+	text-align: center;
+}
+
+#info.hidden {
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s;
+}
+
+.flasher {
+	position: absolute;
+	z-index: 5;
+	margin: 0;
+	background-color: gray;
+	width: 100%;
+	height: 100%;
+	display: none;
+	animation-name: flashing;
+	-webkit-animation-name: flash-animation;
+    -webkit-animation-duration: 0.3s;
+    animation-iteration-count: infinite;
+    animation-duration: 0.3s;
+
+}
+
+.flash {
+    -webkit-animation-name: flash-animation;
+    -webkit-animation-duration: 0.3s;
+
+    animation-name: flash-animation;
+    animation-duration: 0.3s;
+}
+
+@-webkit-keyframes flashing {  
+    0% { opacity: 0; }
+    50%   { opacity: .75; }
+    100% {opacity: 0;}
+}
+
+@keyframes flashing {  
+    0% { opacity: 0; }
+    50%   { opacity: .75; }
+    100% {opacity: 0;}
+}
+</style>
+
+<script>
+
+
+var cellWidth = 40;
+var cellHeight = 40;
+var gridHeight = Math.floor(window.innerHeight/cellHeight); //cells
+var gridWidth = Math.floor(window.innerWidth/cellWidth); //cells
+var centerX = Math.floor(gridWidth/2)
+var centerY = Math.floor(gridHeight/2)
+var timer
+var activeBlock
+var blocks = []
+var falling 
+var aliveColor = "white"
+var deadColor = "black"
+var directionVectors = {
+		'left': [-1,0],
+		'right': [1,0],
+		'up': [0,-1],
+		'down': [0,1]
+	}
+var speedUpFactor = .8
+
+
+function cellToCoord(cell){
+	coords = cell.id.split(",")
+	return {x:parseInt(coords[0]),y:parseInt(coords[1])}
+}
+
+function coordToCell(x,y){
+	return document.getElementById(x.toString() + "," + y.toString())
+}
+
+function drawCells(){
+	for (y = 0; y < gridHeight; y ++){
+
+		for (x = 0; x < gridWidth; x ++){
+			cell = document.createElement("div")
+			cell.id = x.toString() + "," + y.toString()
+			cell.style.left = x*cellWidth
+			cell.style.top = y*cellHeight
+			cell.style.width = cellWidth
+			cell.style.height = cellHeight
+			cell.style.backgroundColor = "white"
+			cell.className = "cell"
+			document.body.appendChild(cell)
+		}
+		document.body.appendChild(document.createElement("br"))
+	}
+}
+
+var shapes = [
+		[ [[1,1,1],[0,1,0]], [[0,1],[1,1],[0,1]], [[0,1,0],[1,1,1]], [[1,0],[1,1],[1,0]]],
+
+		[ [[1,1,1,1]], [[1],[1],[1],[1]] ,[[1,1,1,1]], [[1],[1],[1],[1]]],
+
+		[ [[1,1,0],[0,1,1]], [[0,1],[1,1],[1,0]], [[0,1,1],[1,1,0]],[[1,0],[1,1],[0,1]]],
+		[ [[0,1,1],[1,1,0]], [[1,0],[1,1],[0,1]], [[1,1,0],[0,1,1]],[[0,1],[1,1],[1,0]]],
+
+		[ [[1,0,0],[1,1,1]], [[1,1],[1,0],[1,0]], [[1,1,1],[0,0,1]],[[0,1],[0,1],[1,1]] ],
+		[ [[1,1,1],[1,0,0]], [[1,1],[0,1],[0,1]], [[0,0,1],[1,1,1]],[[1,0],[1,0],[1,1]] ],
+
+
+		[ [ [1,1],[1,1] ],[ [1,1],[1,1] ],[ [1,1],[1,1] ],[ [1,1],[1,1] ] ]
+	]
+
+//,[[1,1,1,1]], [[1],[1],[1],[1]]
+//var rotator = [[0,1],[-1,0]]
+
+function Block(shapeSet){
+	this.shapeSet = shapeSet
+	this.visible = false
+	this.shapeIndex = 0
+	this.shape = this.shapeSet[this.shapeIndex]
+	this.coords
+	this.frozen = false
+	this.timer
+	this.dropping
+	return this
+}
+
+Block.prototype.draw = function(parity){
+	// show a shape with the upper left at coords
+	x = this.coords[0]
+	y = this.coords[1]
+
+	for (var i=0;i<this.shape.length; i++){
+		row = this.shape[i]
+		for (var j=0; j<row.length; j++){
+			elt = row[j] // so elt is row i, col j
+
+			if (elt == 1 && parity == 'show'){
+				coordToCell(j+x,i+y).style.backgroundColor = 'black'}
+			else if (elt == 1 && parity == 'hide'){
+				coordToCell(j+x,i+y).style.backgroundColor = 'white'
+				}
+			}
+	}
+	return this
+}
+
+Block.prototype.show = function (){
+	this.draw("show")
+	this.visible = true
+	return this
+}
+Block.prototype.hide = function () {
+	this.draw("hide")
+	this.visible = false
+	return this
+}
+
+Block.prototype.setCoords = function (coords) {
+	if (this.visible == true) { this.hide()
+							this.coords = [coords[0],coords[1]]
+							this.show()
+					}
+	else {this.coords = [coords[0],coords[1]]}
+	return this
+}
+
+Block.prototype.setActive = function(){
+	activeBlock = this
+	return this
+}
+
+Block.prototype.freeze = function (){
+	this.frozen = true
+	return this
+}
+
+Block.prototype.unfreeze = function (){
+	this.frozen = false
+	return this
+}
+
+Block.prototype.rotatable = function(){
+	// write this!
+
+}
+
+Block.prototype.moveable = function (direction){
+	//console.log("seeing whether it's movable!")
+	//console.log("is it frozen: " + this.frozen)
+	//console.trace()
+	var moveable
+
+	 directionGuards = {
+			"up": function(x,y){ if (y > centerY){
+							return true}},
+			"left": function(x,y){ if (x > centerX){
+						return true}},
+			"down": function(x,y){ if (y < centerY){
+						return true}},
+			"right": function(x,y){ if (x < centerX){
+						return true}}
+	}
+
+	//first of all, let's not let the block move off the board
+	 switch(direction){
+		case "up": moveable = (this.coords[1] == 0) ? false: true;
+			break;
+		case "left": moveable = (this.coords[0] == 0) ? false: true;
+			break;
+		case "down": moveable = (this.coords[1] + this.shape.length == gridHeight) ? false : true;
+			break;
+		case "right": moveable = (this.coords[0] + this.shape[0].length == gridWidth ) ? false : true;
+			break;
+	}
+
+	// secondly, let's not let it move into someone else
+	if (solidNeighbors(this.neighbors(direction))) {
+		moveable = false
+	}
+	// thirdly, let's not move it if we've declared that it shall be unmoveable
+	if (this.frozen == true) { moveable = false}
+
+
+	return moveable
+
+}
+
+Block.prototype.move = function(direction){
+	directionVec = directionVectors[direction]
+	// all of the error hanidling so that it doesn't go off the grid is in moveable
+	if (this.moveable(direction) == true) {
+		newX = this.coords[0] + directionVec[0]
+		// for the y, we'll use shape[0] to get the height, since the shapes are all rectangular
+		newY = this.coords[1] + directionVec[1]
+
+		this.hide()
+		this.coords = [newX, newY]
+		this.show()
+		}
+	return this
+}
+
+Block.prototype.rotate = function (direc){
+	// this is gross. i hate that i hand-coded the shapes and their rotations!
+	if (this.frozen == false) {
+		this.hide()
+		direc == "clockwise" ? bit = 1 : bit = -1
+		this.shapeIndex = Math.abs((this.shapeIndex + bit ) % (this.shapeSet.length))
+		this.shape = this.shapeSet[this.shapeIndex]
+		this.show()
+	}
+		return this
+}
+
+drop = function (block,direction,speed){
+	if (block.moveable(direction)  == true){
+		block.dropping = true
+		block.move(direction)
+		block.timer = setTimeout(function(k){drop(block,direction,speed)},speed)
+		return true
+	}
+	else {
+		endDrop(block,speed)
+	}
+}
+
+
+findNearestOccupied = function(shape,locus,direction){
+	// so we want this to not search the GRID
+	// but rather search our SHAPE
+	// now only finds vertical 
+	// so as input let's take: 1) the shape, 2) the search starting point in xy-coords, and 3) the direction in which to search
+	
+	//direction: search moves in such and scuh direction
+	directions = {
+		"up": {
+			xShift: 0,
+			yShift: -1
+		},
+		"down": {
+			xShift: 0,
+			yShift: 1
+		},
+		"left": {
+			xShift: -1,
+			yShift: 0
+		},
+		"right": {
+			xShift: 1,
+			yShift: 0
+		}
+	}
+	var d = directions[direction]
+	//console.log(shape)
+	//console.log(shape[locus.y][locus.x])
+	if (shape[locus.y][locus.x] == 1) 
+	 	{return {x:locus.x, y:locus.y} }
+	else { //console.log("recurring!")
+	 	return findNearestOccupied(shape,
+	 			{x: locus.x + d.xShift, y:locus.y + d.yShift}
+	 		, direction)
+		 }
+}
+
+centerLayer = function(){
+	var neighbors = []
+	var firstLayer = {
+		tl: {x: centerX - 1,
+			y: centerY - 1},
+		tc: {x: centerX,
+			y: centerY - 1},
+		tr: {x: centerX + 1,
+			y: centerY - 1},
+		cl: {x: centerX - 1,
+			y: centerY},
+		cr: {x: centerX + 1,
+			y: centerY},
+		bl: {x: centerX - 1,
+			y: centerY + 1},
+		bc: {x: centerX,
+			y: centerY + 1},
+		br: {x:centerX + 1,
+			y: centerY + 1}
+	}
+
+	for (i in firstLayer){
+		neighbors.push(coordToCell(firstLayer[i].x,firstLayer[i].y))
+	}
+
+	return neighbors
+}
+
+centerFilled = function(){
+	return centerLayer().every(function(e){ return e.style.backgroundColor == 'black'})
+}
+
+testCenterFilledFxn = function(){
+	centerLayer().map(function(elt){elt.style.backgroundColor = 'black'})
+	if (centerFilled() = true) {return true}
+	else {return false}
+}
+
+testFillCenterRands = function (){
+	var center = coordToCell(centerX,centerY)
+	center.style.backgroundColor = 'red'
+	centerLayer().map(function (elt){elt.style.backgroundColor = 'black'})
+
+	for (var i = 0; i < 30; i++){
+		var randX = Math.floor(Math.random()*gridWidth)
+		var randY = Math.floor(Math.random()*gridHeight)
+		coordToCell(randX,randY).style.backgroundColor = 'black'
+	}
+
+}
+
+clearCenter = function(){
+	//for item in grid: push backgroundColor onto neighborsArray
+	var grid = []
+	var coinFlip = Math.random()
+
+	//first pass: tag the cells with where they're going
+	for (var y = 0; y < gridHeight; y ++){
+		row = []
+		for (var x = 0; x < gridWidth; x ++){
+
+			cell = coordToCell(x,y)
+			color = cell.style.backgroundColor
+
+			if ( coinFlip > .5){// move them inwards vertically
+				if ( y > centerY){
+					newX = x
+					newY = y - 1
+				}
+				else {
+					newX = x
+					newY = y + 1
+				}
+			}
+			else{ // move them inwards horizontally
+				if ( x > centerX){
+					newX = x - 1
+					newY = y
+				}
+				else {
+					newX = x + 1
+					newY = y
+				}
+			}
+
+			newCell = { newX: newX,
+						newY: newY,
+						color: color}
+			row.push(newCell)
+		}
+		grid.push(row)
+
+	}
+
+	//second pass: actually move them
+	for (var y = 0 ; y < grid.length; y++){
+		for (var x = 0; x < grid[0].length; x++){
+			cellData = grid[y][x]
+			if ( ! (cellData.newX == centerX && cellData.newY == centerY) ) { //don't delete the center nucleus!
+			coordToCell(cellData.newX,cellData.newY).style.backgroundColor = cellData.color
+			}
+		}
+	}
+
+	// clear the outer edges. this code is gross and clunky and i wish JS had an element repeater fxn and a zip fxn, etc.
+	outerEdges().map(function(e){e.style.backgroundColor = 'white'})
+}
+
+var outerEdges = function(){
+	var arr = []
+	for (var x=0; x < gridWidth; x++){
+		arr.push(coordToCell(x,0))
+		arr.push(coordToCell(x,gridHeight-1))
+	}
+	for (var y = 0; y < gridHeight; y++){
+		arr.push(coordToCell(0,y))
+		arr.push(coordToCell(gridWidth-1,y))
+	}
+	return arr
+}
+
+Block.prototype.neighbors = function (direction){
+	neighbors = []
+
+	directions = {
+		"down": {
+			cellXshift: function (i,sliceIndex) {return i},
+			cellYshift: function (i,sliceIndex) {return sliceIndex},
+			neighborXshift : 0,
+			neighborYshift : 1,
+			directionToSearch: 'up',
+			sliceIndex: this.shape.length-1,
+			slice: horizontalSlice(this.shape,this.shape.length-1)
+			},
+		"up": {
+			cellXshift: function (i,sliceIndex) {return i},
+			cellYshift: function (i,sliceIndex) {return 0},
+			neighborXshift : 0,
+			neighborYshift : -1,
+			directionToSearch: 'down',
+			sliceIndex: 0,
+			slice: horizontalSlice(this.shape,0)
+			},
+		"left": {
+			cellXshift: function (i,sliceIndex) {return 0},
+			cellYshift: function (i,sliceIndex) {return i},
+			neighborXshift : -1,
+			neighborYshift : 0,
+			directionToSearch: 'right',
+			sliceIndex: 0,
+			slice: verticalSlice(this.shape,0)
+			},
+		"right": {
+			cellXshift: function (i,sliceIndex) {return sliceIndex},
+			cellYshift: function (i,sliceIndex) {return i},
+			neighborXshift : 1,
+			neighborYshift : 0,
+			directionToSearch: 'left',
+			sliceIndex: this.shape[0].length,
+			slice: verticalSlice(this.shape,this.shape[0].length-1)
+			},
+	}
+
+	var d = directions[direction]
+	//console.log(d)
+	//console.log(d.slice.length)
+	for (var i=0; i < d.slice.length; i++){
+		cellX = this.coords[0] + d.cellXshift(i,d.sliceIndex)
+		cellY = this.coords[1] + d.cellYshift(i,d.sliceIndex)
+		cell = coordToCell(cellX,cellY)
+		//console.log("shifts:")
+//		console.log(d.cellXshift(i,d.sliceIndex),d.cellYshift(i,d.sliceIndex) )
+		nearestOccupied = findNearestOccupied(
+			this.shape,
+			{x: d.cellXshift(i,d.sliceIndex), y: d.cellYshift(i,d.sliceIndex)},
+			d.directionToSearch)
+
+		neighborX = nearestOccupied.x + this.coords[0] + d.neighborXshift
+		neighborY = nearestOccupied.y + this.coords[1] + d.neighborYshift
+		//console.log(neighborX,neighborY)
+		neighbor = coordToCell(neighborX,neighborY)
+		//console.log(neighbor)
+		//neighbor.style.backgroundColor = "blue"
+		if (neighbor) {neighbors.push(neighbor)}
+	}
+	return neighbors
+}
+
+solidNeighbors = function (neighborsArray){
+	return neighborsArray.some(function(e){return e.style.backgroundColor == 'black' || e.style.backgroundColor == 'red' })
+}
+
+horizontalSlice = function(arr,index) {
+	if (index >= 0 && index < arr.length){
+	return arr[index]
+	}
+	else {return false}
+}
+
+verticalSlice = function(arr, index){
+	if (index >= 0 && index < arr[0].length){
+	return arr.map(function(x) {return x[index]})
+	}
+	else {return false}
+}
+
+var newRandomFaller = function(speed){
+	sides = [{x: function(){ return centerX},
+				y: function(){ return 0},
+				direc:"down"},
+			{x: function(){ return centerX}, 
+				y: function(shape){return gridHeight-shape[0].length -1},
+				direc: "up"},
+			{x: function(shape){ return gridWidth-shape.length -1},
+			 	y: function() {return centerY}, 
+			 	direc:"left"},
+			{x: function (){return 0},
+				y: function() {return centerY},
+				direc:"right"}
+			]
+	var shape = shapes[Math.floor(Math.random() * shapes.length )]
+	var side = sides[Math.floor(Math.random()* sides.length)]
+	t = new Block(shape)
+		.setCoords([side.x(shape),side.y(shape)])
+		.show()
+		.setActive()
+	drop(t,side.direc,speed)
+	return t
+}
+
+var setupCenterFlasher = function(){
+	var center = coordToCell(centerX,centerY)
+	center.style.backgroundColor = 'red'
+
+	flasher = document.createElement("div")
+	flasher.id = 'flasher'
+	flasher.className = "flasher"
+	document.body.insertBefore(flasher,coordToCell(0,0))
+}
+
+var play = function(speed){
+	setupCenterFlasher();
+	newRandomFaller(speed)
+}
+
+var flashFlasher = function(){
+		document.getElementById("flasher").className += ' flash';
+		setTimeout(function() {
+          document.getElementById("flasher").className = 'flasher';
+    }, 500);
+
+}
+
+var endDrop = function(block,speed) {
+	clearTimeout(block.timer)
+	block.dropping = false
+	if (centerFilled()) {
+		clearCenter()
+		endDrop(block,speed*speedUpFactor)
+		}
+	else if (outerEdges().some(
+		function (e){ return e.style.backgroundColor == 'black'}))
+		{
+			block.freeze()
+			lose()}
+	else { newRandomFaller(speed)}
+}
+
+var lose = function() {
+	console.log("you lose!")
+}
+
+window.onload = function (){
+	drawCells()
+	play(1000)
+}
+
+
+
+window.addEventListener("keydown", checkKeyPressed, false);
+ 
+function checkKeyPressed(e) {
+    if 		(e.keyCode == '77') { activeBlock.rotate("clockwise")} 
+    else if (e.keyCode == '78') { activeBlock.rotate("clockwise")}
+ 	else if (e.keyCode == '37') { activeBlock.move("left")}
+ 	else if (e.keyCode == '39') { activeBlock.move("right")}  
+ 	else if (e.keyCode == '38') { activeBlock.move("up")} 
+ 	else if (e.keyCode == '40') { activeBlock.move("down")}
+
+
+    else if (e.keyCode == '72') { 
+    	if (document.getElementById("info").hidden == true){
+			document.getElementById("info").hidden = false}
+		else {document.getElementById("info").hidden = true}
+		}
+}
+
+
+
+
+
+</script>	
+
+</head>
+<body>
+
+<div id="info" class="hidden">
+<h2>the game of life, on a torus!</h2>
+
+click (and/or drag!) to kill and resurect!<br>
+
+to kill all the cells, press 'c'!<br>
+
+to start/stop animation, press the space bar!<br>
+
+to randomly re/de-populate all the cells, press 'r'!<br>
+
+to hide/show this box, press 'h'!
+</div>	
+</body>
+</html>

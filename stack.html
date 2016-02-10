@@ -1,0 +1,45 @@
+<html>
+<head></head>
+<body>
+<script>
+
+function Stack() {
+ this.list = []
+
+}
+
+Stack.prototype.push = function(obj){
+	this.list.push(obj)
+	if (obj < this.min.peek())
+		{ this.min.push(obj)}
+}
+
+Stack.prototype.pop = function(){
+	elt = this.peek()
+	this.list = this.list.slice(1)
+	return elt
+}
+
+Stack.prototype.peek = function(){
+	return this.list[0]
+}
+
+
+Stack.prototype.min = function(){
+
+
+}
+
+
+andrewStack = new Stack
+stuff = [5,10,34,78,2,1]
+for (i in stuff){
+	andrewStack.push(stuff[i])
+}
+
+
+</script>
+
+
+</body>
+</html>

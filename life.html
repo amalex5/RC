@@ -1,0 +1,228 @@
+<html>
+<head>
+
+<style>
+ .cell {
+	position: absolute;	
+ 	background-color: white;
+ 	z-index: 0;
+ }
+
+#info{
+	position: absolute;
+	z-index: 2;
+	width: auto;
+	height: auto;
+	padding: 10px;
+	background-color: white;
+	margin: auto;
+	opacity: .8;
+	font-family: arial;
+	font-size: 16pt;
+	text-align: center;
+}
+
+#info.hidden {
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s;
+}
+</style>
+
+<script>
+
+
+var cellWidth = 20;
+var cellHeight = 20;
+var gridHeight = Math.floor(window.innerHeight/cellHeight); //cells
+var gridWidth = Math.floor(window.innerWidth/cellWidth); //cells
+var randResetThreshold = .5
+var randFlucThreshold = .01
+var timer
+var animating = false
+var speed = 500 // in milleseconds per frame
+var aliveColor = "white"
+var deadColor = "black"
+
+var topologies = {
+	torus: {
+		yAbove: function(y) {return 1 <= y ? y - 1 : gridHeight -1 },
+		yBelow: function(y) {return y < gridHeight - 1 ? y + 1 : 0} ,
+		xLeft: function(x) {return  1<= x ? x - 1: gridWidth - 1 },
+		xRight: function(x) {return x < gridWidth - 1 ? x + 1 : 0}
+		},
+	sphere: {
+
+	},	
+	kleinBottle : {
+
+
+		// discontinuity at the y --> flip the x
+	}
+
+}
+var topology = topologies["torus"]
+
+
+function isAlive(cell) {
+	if (cell.style.backgroundColor == aliveColor) {return true}
+	else {return false}
+}
+
+function kill(cell) {
+	cell.style.backgroundColor = deadColor
+}
+
+function vivify(cell){
+	cell.style.backgroundColor = aliveColor
+}
+
+function cellToCoord(cell){
+	coords = cell.id.split(",")
+	return {x:parseInt(coords[0]),y:parseInt(coords[1])}
+}
+
+function coordToCell(x,y){
+	return document.getElementById(x.toString() + "," + y.toString())
+}
+
+function drawCells(){
+	for (y = 0; y < gridHeight; y ++){
+
+		for (x = 0; x < gridWidth; x ++){
+			cell = document.createElement("div")
+			cell.id = x.toString() + "," + y.toString()
+			cell.style.left = x*cellWidth
+			cell.style.top = y*cellHeight
+			cell.style.width = cellWidth
+			cell.style.height = cellHeight
+			cell.style.backgroundColor = "white"
+			cell.className = "cell"
+			cell.onmousedown = function(d) {
+				isAlive(d.target) ? kill(d.target) : vivify(d.target)
+			}
+			document.body.appendChild(cell)
+		}
+		document.body.appendChild(document.createElement("br"))
+	}
+}
+
+function randPopulate(threshold){
+	cells = document.getElementsByClassName("cell")
+	for (var i=0; i<cells.length; i++){
+		if (Math.random() > threshold) {kill(cells[i])}
+		else {vivify(cells[i])}
+		}
+}
+
+function judge(cell){
+	// the logic happens here!
+
+	coords = cellToCoord(cell)
+	x = coords.x
+	y = coords.y
+
+	t = topology
+	neighbors = {
+		tl: {x: t.xLeft(x), y: t.yAbove(y)},
+		tc: {x: x, y: t.yAbove(y)},
+		tr: {x: t.xRight(x), y: t.yAbove(y)},
+		cl: {x: t.xLeft(x), y: y},
+		cr: {x: t.xRight(x), y: y},
+		bl: {x: t.xLeft(x), y: t.yBelow(y)},
+		bc: {x: x, y: t.yBelow(y)},
+		br: {x: t.xRight(x), y: t.yBelow(y)},
+	}
+
+	liveNeighbors = 0
+	for (key in neighbors){
+		neighbor = neighbors[key]
+		if (isAlive(coordToCell(neighbor.x,neighbor.y)) ) { liveNeighbors += 1}
+	}
+
+	if (isAlive(cell)){
+		if (liveNeighbors > 3){ cell.className = "cell dead" }
+		else if (liveNeighbors == 3 || liveNeighbors == 2) { cell.className = "cell alive"}
+		else if (liveNeighbors < 2) {cell.className = "cell dead"}
+	}
+	else {
+		if (liveNeighbors == 3) {cell.className = "cell alive"} //dead cells with exactly three live neighbors are ressurrected!
+		else {cell.className = "cell dead"}
+		}
+
+	//if (Math.random() < randFlucThreshold){cell.className == "cell alive" // cell.className = "cell dead" : cell.className = "cell alive"}
+}
+
+function judgmentDay() {
+	// judge, then kill or vivify
+	// i wish i could use more functional tools here. all these loops...
+	// ALL THESE FOR LOOPS ARE SO UGLY
+
+	cells = document.getElementsByClassName("cell")
+	for (var i=0; i<cells.length; i++){judge(cells[i])}
+
+	cellsToKill = document.getElementsByClassName("cell dead")
+	for (var i=cellsToKill.length -1; i>= 0; --i){
+		cell = cellsToKill[i]
+		kill(cell)
+		cell.className = "cell" // reset its prognosis
+	}
+	cellsToVivify = document.getElementsByClassName("cell alive")
+	for (var i=cellsToVivify.length -1; i>= 0; --i){
+		cell = cellsToVivify[i]
+		vivify(cell)
+		cell.className = "cell" // reset its prognosis
+	}
+
+}
+
+//window.setInterval(judgmentDay(),1000)
+
+window.onload = function (){
+	drawCells()
+	randPopulate(randResetThreshold)
+}
+
+window.addEventListener("keydown", checkKeyPressed, false);
+ 
+function checkKeyPressed(e) {
+    if (e.keyCode == "32") { // space bar stops and starts animation
+    	if (animating) {window.clearInterval(timer); animating = false}
+    	else { timer = window.setInterval(judgmentDay,speed); animating = true}
+    }
+    else if (e.keyCode == '82') { randPopulate(randResetThreshold)}
+    else if (e.keyCode == '67') {
+    	cells = document.getElementsByClassName("cell")
+		for (var i=0; i<cells.length; i++){kill(cells[i])}
+    }
+    else if (e.keyCode == '72') { 
+    	if (document.getElementById("info").hidden == true){
+			document.getElementById("info").hidden = false}
+		else {document.getElementById("info").hidden = true}
+		}
+}
+
+
+
+
+
+</script>	
+
+</head>
+<body>
+
+<div id="info">
+<h2>the game of life, on a torus!</h2>
+
+click (and/or drag!) to kill and resurect!<br>
+
+to kill all the cells, press 'c'!<br>
+
+to start/stop animation, press the space bar!<br>
+
+to randomly re/de-populate all the cells, press 'r'!<br>
+
+to hide/show this box, press 'h'!
+</div>	
+</body>
+</html>

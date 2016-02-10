@@ -1,0 +1,40 @@
+<html>
+<head>
+<script>
+window.onload = function(){
+	document.getElementById("gilgamesh").innerHTML = 'hello!';
+	console.log("hi")
+
+// 	for (var i = 0 ; i < 42;  i++) {
+// 		console.log("gideon doesn't like " + i)
+// 
+// 	}
+// 
+// 	var looptext = 'for (var i = 0 ; i < 42;  i++) {console.log("gideon does\'nt like " + i)}'
+
+var program = {"var": "i", "start": "0", "final_expr": "i<4300", "step": "i++",
+"body": "console.log(\"gideon loves \" + i)"};
+
+function evalFor(for_expr) {
+	eval("var " + for_expr["var"] + ' = ' + for_expr["start"]);
+	eval(for_expr["body"]);
+    eval(for_expr["step"]);
+	if (eval(for_expr["final_expr"])){
+			for_expr['start'] = eval(for_expr["var"]);
+			evalFor(for_expr);
+		}
+}
+
+evalFor(program);
+
+
+}
+
+</script>
+</head>
+<body>
+
+<div id="gilgamesh">
+
+</body>
+</html>

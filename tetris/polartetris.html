@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+<style>
+
+.arc text {
+  font: 10px sans-serif;
+  text-anchor: middle;
+}
+
+.arc path {
+  stroke: #fff;
+}
+
+.svg {
+
+}
+
+#container{
+  margin: 0 auto;
+  text-align: center;
+  //padding: 10px;
+}
+</style>
+
+<title>polar tetris!!!</title>
+
+<body>
+
+<div id="container"></div>
+<script>
+
+var PI = Math.PI;
+var arcPad = 1;  
+var width = window.innerWidth * .9//Math.min(window.innerWidth,window.innerHeight)
+var height = window.innerHeight * .9 // fix
+var longitudeLines = 10
+var latitudeLines = 15
+var cellRadius = Math.min(window.innerWidth,window.innerHeight) / (latitudeLines * 2)
+var speedUpFactor = .8
+var liveCell
+var state = {}
+
+
+var cell = function() {
+  
+  
+}
+
+
+var coordToCell = function(cells,r,t){
+  return cells.filter(function(c){return c.r === r && c.t === t})[0]
+}
+
+var fullInnerRing = function (deadCells){
+  return deadCells.filter(function(c){return c.r === 0}).length === longitudeLines
+}
+
+var clearCells =  function(deadCells){
+  return inwards(deadCells.filter(function(c){return c.r != 0}))
+}
+
+var inwards = function(liveCell){
+  return liveCell.map(function(c){return {r: c.r - 1, 
+                                          t: c.t}
+                          })
+}
+
+var clockwise = function(liveCell){
+  return liveCell.map(function(c){return {r: c.r,
+                                          t: theta(c.t + 1) }
+
+                                  })
+}
+
+var counterclockwise = function(liveCell){
+  return liveCell.map(function(c){return {r : c.r, 
+                                          t: theta( c.t - 1)  }
+                                      })
+}
+
+var rotate = function(liveCell){
+
+}
+
+var theta = function(input){
+  if (input >= 0) 
+    { return Math.abs(input % longitudeLines) }
+  else { return longitudeLines - Math.abs(input % longitudeLines) }
+
+}
+
+
+
+var shapes = [
+     [[1,1,1],[0,1,0]], 
+
+     [[1,1,1,1]],
+
+     [[1,1,0],[0,1,1]],
+     [[0,1,1],[1,1,0]],
+
+     [[1,0,0],[1,1,1]],
+     [[1,1,1],[1,0,0]] ,
+
+
+     [ [1,1],[1,1] ]
+  ]
+
+var arrayOfArrays = function (rows) {
+  var arr = [];
+  for (var i=0;i<rows;i++) {  arr[i] = [];  }
+  return arr;
+}
+
+var rotateShape = function(shape,direction){
+
+    var oldShape = shape
+    var newShape = arrayOfArrays(oldShape[0].length)
+
+    for (var j=0; j < oldShape.length; j++){
+        oldRow = oldShape[j]
+        for (var i=0; i < oldRow.length; i++){
+          elt = oldRow[i]
+          console.log("pushing " + elt + " to " + (oldRow.length - i).toString() + ',' + j.toString())
+          console.log(newShape)
+          newRow = direction == "counterclockwise" ? oldRow.length - i - 1 : i  //
+          newCol = direction == "counterclockwise" ? j : oldRow.length - j - 1 //
+          newShape[newRow][newCol] = elt
+        }
+
+    }
+  return newShape
+}
+
+
+var isMobile = function (liveCell,direction,deadCells){
+  var mobile
+
+  if (direction === "inwards"){
+    mobile = 
+      !(liveCell.some(function(c){return c.r === 0})) &&
+      !(liveCell.some(function(c){
+        return isDeadCell(c.r - 1, c.t,deadCells)
+      }))
+  }
+  else if (direction === "clockwise"){
+    mobile = !(liveCell.some(function(c){return isDeadCell(c.r,c.t+1,deadCells)}))
+  }
+  else if (direction === "counterclockwise"){
+    mobile = !(liveCell.some(function(c){return isDeadCell(c.r,c.t-1,deadCells)}))
+  }
+
+  return mobile
+}
+
+var drop = function(speed){
+
+  //liveCell = state.liveCell
+  //deadCells = state.deadCells
+
+  // if our piece gets stuck at the edge, the game ends
+  if ( !(isMobile(state.liveCell,"inwards",state.deadCells)) &&
+        (state.liveCell.some(function(c){return c.r === latitudeLines}))) {
+      console.log("you lose!")
+      return
+  }
+
+  // otherwise the game continues
+  else if (isMobile(state.liveCell,"inwards",state.deadCells)){
+    state.liveCell = inwards(state.liveCell)
+      window.setTimeout(function(){
+
+        drop(speed)
+      },speed)
+  }
+
+  // otherwise the piece dies and the game continues
+  else {
+    state.deadCells = appendLiveToDead(state.liveCell,state.deadCells)
+    if (fullInnerRing(state.deadCells)) {
+      state.deadCells = clearCells(state.deadCells)
+      speed = speed * speedUpFactor
+    }
+    state.liveCell = newRandomFaller()
+    drop(speed)
+  }
+
+  // redraw
+  draw(state.liveCell,state.deadCells)
+}
+
+var isDeadCell = function(r,t,deadCells){
+  return deadCells.reduce(function(prev, curr){
+    return prev || (curr.r === r && curr.t === t)
+      }, false
+    )
+}
+
+var appendLiveToDead = function(liveCell,deadCells){
+  return deadCells.concat(
+       liveCell.filter(function(c){
+        return !isDeadCell(c.r,c.t,deadCells)
+        })
+    )
+}
+
+var svg = d3.select("#container").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+
+var drawCell = d3.svg.arc()
+    .innerRadius(function(d, i) {
+      return  (cellRadius)*d.r;
+      })
+    .outerRadius(function(d, i) {
+      if ( (d.r + 1) >= latitudeLines){
+        return (cellRadius)*(d.r+20); // make it BLEEEEEEED
+      }
+      else {
+        return (cellRadius)*(d.r+1);
+        }
+      })
+    .startAngle(function(d,i){
+      return (2* Math.PI / longitudeLines ) * d.t;})
+    .endAngle(function(d, i) {
+      return (2* Math.PI / longitudeLines ) * (d.t+1);
+      });
+
+function draw(liveCell,deadCells) {
+  var cells = svg.selectAll(".cells")
+      .data(function(){
+        return deadCells.concat(liveCell)
+      });
+
+  cells.attr("class", "cells")
+        .attr("d", drawCell);
+
+  cells.enter().append("svg:path")
+      .attr("class", "cells")
+      .attr("fill", "black")
+      .attr("transform", "translate(" + width/2 + "," + height/2 +") ")
+      .attr('stroke', '#fff')
+      .attr('stroke-width', '1') 
+      .attr("d", drawCell);
+
+  cells.exit().remove();
+
+}
+
+
+var shapeGenerator = function(shape,offset){
+  // where offset looks like {r:5,t:3}
+  var shapeObj = []
+  for (var i = 0; i < shape.length; i++){
+    for (var j=0; j< shape[0].length; j++){
+      if (shape[i][j] === 1){
+            shapeObj.push({r:offset.r+j,t:offset.t+i})
+          }
+        }
+    }
+  return shapeObj
+}
+
+var newRandomFaller = function(){
+  var randR = Math.floor(Math.random()*(latitudeLines - 1))
+  var randT = Math.floor(Math.random()*longitudeLines)
+  var randShape = shapes[Math.floor(Math.random()*shapes.length)]
+  return shapeGenerator(randShape, {r:latitudeLines -1 ,t:randT} )
+
+}
+
+window.addEventListener("keydown", checkKeyPressed, false);
+ 
+function checkKeyPressed(e) {
+  if      (e.keyCode == '90') { 
+    if (isMobile(state.liveCell,"counterclockwise",state.deadCells)){
+                              state.liveCell = counterclockwise(state.liveCell)
+                              console.log(state.liveCell.map(function(c){return c.t}))
+                              draw(state.liveCell,state.deadCells)
+                            }
+ 
+                               } // z 
+  else if (e.keyCode == '88') { console.log("clock!")
+                  if (isMobile(state.liveCell,"clockwise",state.deadCells)) {
+                               state.liveCell = clockwise(state.liveCell)
+                               draw(state.liveCell,state.deadCells)
+                                                             console.log(state.liveCell.map(function(c){return c.t}))
+
+}
+                  else {console.log("immobile!")}
+                                } // x
+  else if (e.keyCode == '40') { 
+                      if (isMobile(state.liveCell,"inwards",state.deadCells)) {
+                      state.liveCell = inwards(state.liveCell) 
+                      draw(state.liveCell,state.deadCells)
+
+}
+
+
+  } 
+
+
+
+
+
+
+
+  // down arrow
+  //else if (e.keyCode == '39') { activeBlock.move("right")}  
+  //else if (e.keyCode == '38') { activeBlock.move("up")} 
+  //else if (e.keyCode == '40') { activeBlock.move("down")}
+
+
+else if (e.keyCode == '72') { 
+  if (document.getElementById("info").hidden == true){
+  document.getElementById("info").hidden = false}
+else {document.getElementById("info").hidden = true}
+}
+}
+
+
+window.onload = function(){
+
+  // c = newRandomFaller()
+  // state.liveCell = c
+  // state.deadCells = []
+  // draw(state.liveCell,state.deadCells)
+
+  //cellsOfFullInnerRing = []
+  //for (var i = 0; i < longitudeLines; i++){
+  //  cellsOfFullInnerRing.push({r:0,t:i})
+  //}
+
+
+  state.liveCell = newRandomFaller()
+  state.deadCells = [] //cellsOfFullInnerRing
+
+    drop(500)
+
+
+}
+
+
+
+</script>

@@ -1,0 +1,4 @@
+-- 99 problems, #8!
+-- delete consecutive identical elements in a list
+
+eliminator :: 
