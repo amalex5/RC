@@ -1,0 +1,6 @@
+-- monad sketchpad
+-- from reading along: http://www.cs.nott.ac.uk/~pszgmh/monads
+
+inc :: [Int] -> [Int]
+inc [] = []
+inc (n:ns) = n+1 : inc ns
