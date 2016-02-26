@@ -7,6 +7,8 @@ var linkedListNode = function(){
 }
 
 
+// skip list
+
 var linkedList = function(){
 	this.array = []
 	this.firstPointer
@@ -16,12 +18,32 @@ var linkedList = function(){
 		var pointer = getNewPointer()
 		var oldFirstPointer = this.firstPointer
 		this.array[pointer] = {val: val; next: firstPointer}
-		this.firstPointer = pointer
+		this.firstPointer = getNewPointer("nope")
 
 	}
 
 	this.getNewPointer = function(){
+		var pointer = null
 
+	}
+
+	this.gnpHelper = function (tmpPointer){
+		if (tmpPointer == "nope"){
+			var newTmpPointer
+			for (var i=0; i<5; i++){
+				newTmpPointer = Math.floor(Math.random * this.array.length)
+				if (typeof this.array[tmpPointer] == 'undefined') {
+					this.array.length = this.array.length * 2
+					gnpHelper("nope")
+					}
+				else{ 
+
+				}
+			}
+
+		else {
+
+		}
 
 	}
 

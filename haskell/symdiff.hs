@@ -1,7 +1,5 @@
 -- symdiff
 
-
-
 data Expr = Val Int
 		   | Const [Char] -- :: [Char] -> Expr
 		   | Symbol
@@ -15,6 +13,7 @@ data Expr = Val Int
            | Log Expr
            | Sin Expr 
            | Cos Expr
+           | Fxn [Char] Expr
            deriving (Show,Eq)
 
 diff :: Expr -> Expr
@@ -30,6 +29,7 @@ diff (Div x y) = diff (Mul x (Pow y (Val (-1)) ) )
 diff (Exp x) = Mul (Exp x) (diff x)
 diff (Sin x) = Mul (Cos x) (diff x)
 diff (Cos x) = Neg (Mul (Sin x) (diff x) )
+diff (Fxn xs y) = Mul (Fxn (xs ++ "\'") y) (diff y)
 
 simplify :: Expr -> Expr
 simplify (Neg (Val 0)) = Val 0
@@ -48,15 +48,25 @@ simplify (Mul x y)
   | simplify y == (Val 0) = Val 0
   | simplify x == simplify y = (Pow x (Val 2))
   | otherwise = (Mul (simplify x) (simplify y) )
-simplify Symbol = Symbol
-simplify (Const x) = Const x
-simplify (Val x) = Val x
+simplify (Sub x y)
+  | simplify x == (Val 0) = simplify (Neg y)
+  | simplify y == (Val 0) = simplify x
+  | simplify x == simplify y = Val 0
+  | otherwise = (Sub (simplify x) (simplify y) ) 
+simplify (Div x y)
+  | simplify y == (Val 1) = simplify x
+  | simplify x == (Val 0) = Val 0
+  | simplify y == (Val 0) = error "no division by zero!"
+  | simplify x == simplify y = Val 1
+  | otherwise = (Div (simplify x) (simplify y) )
 simplify (Pow x y)
   | y == (Val 1) = x
   | y == (Val 0) = Val 1
   | otherwise = Pow x y
 simplify (Cos x) = Cos (simplify x)
 simplify (Sin x) = Sin (simplify x)
+simplify (Fxn f y) = Fxn f (simplify y)
+simplify x = x
 
 
 -- redo this so it's some pretty tree un-parsing with operational priority!
@@ -72,6 +82,13 @@ pprint (Const x) = x
 pprint (Val x) = show x
 pprint (Cos x) = "cos(" ++ pprint x ++ ")"
 pprint (Sin x) =  "sin(" ++ pprint x ++ ")"
+pprint (Fxn xs y) = xs ++ "(" ++ pprint y ++ ")"
+
+-- 
+
+-- look at expr expr 
+
+
 
 
 --(Neg (Cos (Mul Symbol (Val 5))))
