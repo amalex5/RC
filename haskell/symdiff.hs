@@ -16,6 +16,8 @@ data Expr = Val Int
            | Fxn [Char] Expr
            deriving (Show,Eq)
 
+-- how do i factor out the binary and unary operations into seperate subtypes?
+
 diff :: Expr -> Expr
 diff (Val _ ) = Val 0
 diff (Const _ ) = Val 0
@@ -32,6 +34,8 @@ diff (Cos x) = Neg (Mul (Sin x) (diff x) )
 diff (Fxn xs y) = Mul (Fxn (xs ++ "\'") y) (diff y)
 
 simplify :: Expr -> Expr
+simplify (Mul (Val x) (Val y)) = Val (x*y)
+simplify (Add (Val x) (Val y)) = Val (x+y)
 simplify (Neg (Val 0)) = Val 0
 simplify (Neg (Val x)) = Val (-x)
 simplify (Neg (Neg x)) =  simplify x
@@ -70,6 +74,7 @@ simplify x = x
 
 
 -- redo this so it's some pretty tree un-parsing with operational priority!
+-- in particular, need to do this in a non-hacky way...
 pprint :: Expr -> [Char]
 pprint (Neg x) = "-" ++ pprint x
 pprint (Add x y) = pprint x ++ "+" ++ pprint y
@@ -82,27 +87,16 @@ pprint (Const x) = x
 pprint (Val x) = show x
 pprint (Cos x) = "cos(" ++ pprint x ++ ")"
 pprint (Sin x) =  "sin(" ++ pprint x ++ ")"
+pprint (Exp x) = "e^(" ++ pprint x ++ ")"
 pprint (Fxn xs y) = xs ++ "(" ++ pprint y ++ ")"
 
--- 
 
--- look at expr expr 
+test1 :: Expr
+test1 = (Add (Sin (Mul (Val 5) (Pow Symbol (Val 7)))) (Mul (Val 4) (Neg Symbol)) )
 
+test2 :: Expr
+test2 = (Neg (Cos (Mul Symbol (Val 5))))
 
+test3 :: Expr
+test3 = (Fxn "f" (Mul (Exp (Mul (Val 5) Symbol)) (Pow Symbol (Val 7))))
 
-
---(Neg (Cos (Mul Symbol (Val 5))))
---instance (Show) => Show (Expr) where
---   show (Leaf x) = show x
---   show (Branch val l r) = " " ++ show val ++ "\n" ++ show l ++ "  " ++ show r
-
-
---(Add (Sin (Mul (Val 5) (Pow Symbol (Val 7)))) (Mul (Val 4) (Neg Symbol)) )
-
--- GADTS
---test :: Expr -> Bool
--- diff x = undefined
---diff (* x y) = (+ (* x (diff y)) (* (diff x) y))
---diff (+ x y) = (+ (diff x) (diff y))
---diff (- x y) = diff (+ x (-y))
---diff (exp x) = (exp (diff x))
