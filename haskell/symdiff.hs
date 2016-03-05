@@ -1,5 +1,7 @@
 -- symdiff
 
+import System.IO
+
 data Expr = Val Int
 		   | Const [Char] -- :: [Char] -> Expr
 		   | Symbol
@@ -99,4 +101,21 @@ test2 = (Neg (Cos (Mul Symbol (Val 5))))
 
 test3 :: Expr
 test3 = (Fxn "f" (Mul (Exp (Mul (Val 5) Symbol)) (Pow Symbol (Val 7))))
+
+
+
+
+display  :: Expr -> IO ()
+display es  =  do result <- ((pprint . simplify . diff) es)
+                  putStr "result is: "
+                  putStr result
+                  putStr "\n"
+
+main :: IO ()
+main = do hSetBuffering stdout NoBuffering
+          putStrLn "\nandrew's symbolic differentiator!"
+          putStrLn "-----------------------------\n"
+          putStr "enter an expression! : "
+          ns <- readLn
+          display ns
 
