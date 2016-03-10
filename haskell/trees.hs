@@ -56,15 +56,26 @@ x `spaceyConcat` y = x ++ " " ++ y
 foldrabilityTest5 = foldr spaceyConcat mempty testTree2
 -- whee!
 
+--- blah. now let's just write some random tests for binary trees.
+
+depth :: BinaryTree a -> Int
+depth t = 
+
+depth1 :: BinaryTree a -> Int -> Int
+depth (Leaf _) 0 = 1
+depth (Node l n r) = if depth l > depth r then depth l else depth r
+
+
+
 -- but, screw the concatenation
 -- what if we want to visualize this tree AS a tree?
 -- and not as a structureless list, nor an unreadable nest of parentheses
 -- oooh, and this will be a good oppurtuninty to implement a breadth-first something
-showTree :: BinaryTree a -> [Char]
-showTree t =  showTree1 t []
+--showTree :: BinaryTree a -> [Char]
+--showTree t =  showTree1 t []
 
-showTree (Leaf )
-showTree1 (Node (Node l n r) t (Node l1 n1 r1)) l = 
+--showTree (Leaf)
+--showTree1 (Node l n r) l = 
 
 --   4   
 --  / \
