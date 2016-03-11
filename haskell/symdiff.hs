@@ -1,6 +1,6 @@
 -- symdiff
 
-import System.IO
+---import System.IO
 
 data Expr = Val Int
 		   | Const [Char] -- :: [Char] -> Expr
@@ -26,14 +26,15 @@ diff (Const _ ) = Val 0
 diff (Symbol) = Val 1
 diff (Neg x) = Neg (diff x)
 diff (Add x y) = Add (diff x) (diff y)
-diff (Mul x y) = Add (Mul (diff x) y ) (Mul x (diff y))
+diff (x `Mul` y) = ( (diff x) `Mul` y ) `Add`  (x `Mul` (diff y) )
 diff (Sub x y) = diff (Add x (Neg y))
 diff (Pow x (Val n)) = Mul (Val n) (Pow x (Val (n - 1) ) )
 diff (Div x y) = diff (Mul x (Pow y (Val (-1)) ) )
 diff (Exp x) = Mul (Exp x) (diff x)
 diff (Sin x) = Mul (Cos x) (diff x)
-diff (Cos x) = Neg (Mul (Sin x) (diff x) )
+diff (Cos x) = Neg (Mul (Sin x) (diff  x) )
 diff (Fxn xs y) = Mul (Fxn (xs ++ "\'") y) (diff y)
+
 
 simplify :: Expr -> Expr
 simplify (Mul (Val x) (Val y)) = Val (x*y)
@@ -92,6 +93,8 @@ pprint (Sin x) =  "sin(" ++ pprint x ++ ")"
 pprint (Exp x) = "e^(" ++ pprint x ++ ")"
 pprint (Fxn xs y) = xs ++ "(" ++ pprint y ++ ")"
 
+test0 :: Expr
+test0 = (Add (Pow Symbol (Val 2)) (Mul (Exp Symbol) (Sin ( Mul (Val 5) Symbol))))
 
 test1 :: Expr
 test1 = (Add (Sin (Mul (Val 5) (Pow Symbol (Val 7)))) (Mul (Val 4) (Neg Symbol)) )
@@ -105,17 +108,17 @@ test3 = (Fxn "f" (Mul (Exp (Mul (Val 5) Symbol)) (Pow Symbol (Val 7))))
 
 
 
-display  :: Expr -> IO ()
-display es  =  do result <- ((pprint . simplify . diff) es)
-                  putStr "result is: "
-                  putStr result
-                  putStr "\n"
+--display  :: Expr -> IO ()
+--display es  =  do result <- ((pprint . simplify . diff) es)
+--                  putStr "result is: "
+--                  putStr result
+--                  putStr "\n"
 
-main :: IO ()
-main = do hSetBuffering stdout NoBuffering
-          putStrLn "\nandrew's symbolic differentiator!"
-          putStrLn "-----------------------------\n"
-          putStr "enter an expression! : "
-          ns <- readLn
-          display ns
+--main :: IO ()
+--main = do hSetBuffering stdout NoBuffering
+--          putStrLn "\nandrew's symbolic differentiator!"
+--          putStrLn "-----------------------------\n"
+--          putStr "enter an expression! : "
+--          ns <- readLn
+--          display ns
 
