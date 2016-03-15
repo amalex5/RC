@@ -16,17 +16,17 @@ var orderDict = {
         10: "X"
     },
     2: {
-        1: "X",
+        0: "X",
         5: "L",
         10: "C"
     },
     3 : {
-        1: "C",
+        0: "C",
         5: "D",
         10: "M"
     },
     4 : {
-        1: "M",
+        0: "M",
         5: "MMMMM",
         10: "MMMMMMMMMM"
     }
@@ -52,17 +52,44 @@ var digitize1 = function(input,arr){
 var romanizeDigit = function (digit,order){
     // takes in a digit and an order of magnitude and returns its roman numeral representation
     thisOrder = orderDict[order]
-    if (digit < 4){
-        return repeater(thisOrder[1],digit)
-    }
-    else if (digit == 4){
-        return thisOrder[1] + thisOrder[5]
-    }
-    else if ( digit > 4 && digit < 9){
-        return thisOrder[5] + repeater(thisOrder[1], digit - 5 )
-    }
-    else if (digit ==  9){
-        return thisOrder[1] + thisOrder[10]
+    lastOrder = orderDict[order - 1]
+    nextOrder = orderDict[order + 1]
+    
+    if (order == 1){ // roman numerals have no zero digit, so there's a bit of a discontinuity in how we treat things
+        if (digit == 0){
+            return ''
+            }
+        if (digit < 4){
+            return repeater(thisOrder[1],digit)
+        }
+        else if (digit == 4){
+            return thisOrder[1] + thisOrder[5]
+        }
+        else if ( digit > 4 && digit < 9){
+            return thisOrder[5] + repeater(thisOrder[1], digit - 5 )
+        }
+        else if (digit ==  9){
+            return thisOrder[1] + thisOrder[10]
+        }    }
+        
+    else {
+    
+        if (digit == 0){
+            return thisOrder[0]
+        }
+        if (digit < 4){
+            return repeater(thisOrder[0],digit)
+        }
+        else if (digit == 4){
+            return thisOrder[0] + thisOrder[5]
+        }
+        else if ( digit > 4 && digit < 9){
+            return thisOrder[5] + repeater(thisOrder[0], digit - 5 )
+        }
+        else if (digit ==  9){
+            return thisOrder[0] + thisOrder[10]
+        }
+    
     }
     
 }
@@ -71,10 +98,10 @@ var romanize = function (input){
     // takes in a decimal number and returns its roman numeral representation
     var digits = digitize(input)
     var output = ''
-    for (var i = digits.length; i > 0; i--){
+    for (var i= 0; i < digits.length; i++){
         // concatenate the romanized representation of each digit
-        order = i
-        digit = digits[i - 1] // subtracting because array indexes start at zero
+        order = digits.length - i
+        digit = digits[i] // subtracting because array indexes start at zero
         //console.log("i",i,"; digit",digit,"; order",order,"; digit array: ",digits)
         output += romanizeDigit(digit,order)
      }
@@ -82,11 +109,6 @@ var romanize = function (input){
 }
 
 
-var test = function(n) {
-    for (var i = 1; i < n; i++){
+for (var i = 1; i < 1500; i++){
     console.log(i, romanize(i))
     }
-}
-
-
-
