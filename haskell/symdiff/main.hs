@@ -33,8 +33,11 @@ diff (Div x y) = diff (Mul x (Pow y (Val (-1)) ) )
 diff (Exp x) = Mul (Exp x) (diff x)
 diff (Sin x) = Mul (Cos x) (diff x)
 diff (Cos x) = Neg (Mul (Sin x) (diff  x) )
-diff (Fxn xs y) = Mul (Fxn (xs ++ "\'") y) (diff y)
-
+--diff (Fxn xs y) = Mul (Fxn (xs ++ "\'") y) (diff y)
+diff (Fxn name arg) = case name of
+	"sin" -> Mul (Fxn "cos" arg) (diff arg)
+    "cos" -> Mul (Neg (Fxn "sin" arg)) (diff arg) 
+    otehrwise -> Mul (Fxn (name ++ "\'") arg) (diff arg) -- generic chain rule
 
 simplify :: Expr -> Expr
 simplify (Mul (Val x) (Val y)) = Val (x*y)
