@@ -40,7 +40,7 @@ instance Applicative Triple where
 -- still not really sure what traversable is, but here we go:
 instance Traversable Triple where
 	--traverse  :: Applicative f => (a -> f b) -> t a -> f (t b)
-    traverse (Tr x y z) = 
+    traverse f (Tr x y z) = 
 
 
 

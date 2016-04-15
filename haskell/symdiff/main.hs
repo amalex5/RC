@@ -5,10 +5,9 @@ import Expr
 import Parser
 import Diff
 import Simplify
-import Control.Monad.State
 
 main :: IO ()
-main = runRepl
+main = putStrLn welcomeString >> runRepl
 
 flushStr :: String -> IO ()
 flushStr str = putStr str >> hSetBuffering stdin LineBuffering --hFlush stdout
@@ -22,6 +21,9 @@ evalString expr = return $ id (pprint . evalWrapper . parseWrappedExpressions $ 
 
 evalAndPrint :: String -> IO ()
 evalAndPrint expr =  (evalString expr) >>= putStrLn
+
+welcomeString :: String
+welcomeString = "welcome to aQuery!\ntype \"quit\" to quit"
 
 promptString :: String
 promptString = "aQuery>> "
@@ -46,6 +48,7 @@ second = head . tail
 evalWrapper :: [WrapperFxn] -> Expr
 evalWrapper = foldl foldingFxn (Val 0)
   where 
+    --foldingFxn = getLibFxn b x
     foldingFxn _ (WrapperFxn ("$",y))   = (parseExpr y)
     foldingFxn b (WrapperFxn ("diff",y)) = diffn 1 y b
     foldingFxn b (WrapperFxn ("simplify",_)) = simplify b
@@ -55,8 +58,11 @@ evalWrapper = foldl foldingFxn (Val 0)
     foldingFxn b (WrapperFxn ("mul",y)) = (Mul b (parseExpr y) )
     foldingFxn b (WrapperFxn ("div",y)) = (Div b (parseExpr y) )
     foldingFxn b (WrapperFxn ("pow",y)) = (Pow b (parseExpr y) )
+    foldingFxn b (WrapperFxn ("showAST",_)) = Var (show b)
 
-    -- foldingFxn b (WrapperFxn ("showAST",_)) = b
+
+    -- error handling
+
 
     -- deal with errors. 
 

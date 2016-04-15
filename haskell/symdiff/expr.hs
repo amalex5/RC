@@ -16,6 +16,9 @@ data Expr = Val Int
            | Error [Char]
            deriving (Show,Eq)
 
+--test0 = Add (Val 1) (Mul (Val 5) (Var "c"))
+--test1 = Add test0 (Add (Var "b") (Val 7))
+
 
 -- GOOD LORD THIS IS GROSS WON'T YOU PLEASE FACTOR THIS OUT
 -- INTO A SIMPLER DATA TYPE

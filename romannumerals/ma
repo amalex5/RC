@@ -1,1 +1,0 @@
-gcc -o te main.c -lSDL2 -lm -Wall

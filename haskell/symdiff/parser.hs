@@ -56,10 +56,13 @@ table = [
 factor = 
        try function -- "try" consumes no input, whereas <|> does. 
    <|> parens
+   <|> numMulVar
    <|> number
    <|> variable
    <?> "simple expression"
    
+
+   -- can we add something 
 
 
 function :: Parser Expr
@@ -85,10 +88,18 @@ number = do { spaces; ds <- many1 digit; spaces; return (Val $ read ds) } <?> "n
 variable :: Parser Expr
 variable = do
   spaces
-  c <- many letter
+  c <- many letter 
   spaces
   return $ Var c
 --variable = many letter >>= return . Var 
+
+numMulVar :: Parser Expr
+numMulVar = do
+  spaces
+  d <- many1 digit
+  c <- many1 letter
+  spaces
+  return $ Mul (Val $ read d) (Var c)
 
 
 wrapper :: Parser WrapperFxn
