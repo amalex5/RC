@@ -22,6 +22,7 @@ arrHeight a = snd . snd $ bounds a
 -- | given a 'LifeBoard' and coordinates, return a list of the coordinates of all the neighbors
 -- this function is my favorite part of this code :)
 -- no hand-enumeration!
+-- also, note that that ONE usage of 'mod' gives it toroidal geometry
 neighborCoords ::  LifeBoard -> Coords -> [Coords]
 neighborCoords arr (x,y) = [ (i,j) | i <- perms (arrWidth  arr) x,
                                      j <- perms (arrHeight arr) y,
