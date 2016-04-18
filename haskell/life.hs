@@ -32,30 +32,32 @@ neighborCoords arr (x,y) = [ (i,j) | i <- perms (arrWidth  arr) x,
 
 -- | given a 'LifeBoard' and some coordinates, return a list of the live/deadness of the neighboring cells
 neighborContents :: LifeBoard -> Coords -> [Cell]
-neighborContents arr (x,y) = map (arr!) (neighborCoords arr (x,y))
+neighborContents arr coords = map (arr!) (neighborCoords arr coords)
 
 -- | given a 'LifeBoard' and the coordinates of one of its cells, return the number of live neighbors
 numLiveNeighbors :: LifeBoard -> Coords -> Int
-numLiveNeighbors arr (x,y) = length (filter (\x -> x == Live) (neighborContents arr (x,y)))
+numLiveNeighbors arr coords = length (filter ((==) Live) (neighborContents arr coords))
 
 -- | given a 'LifeBoard;, and the coordinates of one of its cells
 -- determine whether that cell lives or dies in the next generation
+-- i really like this function, too. 
 judgeCell :: LifeBoard -> Coords -> Cell
-judgeCell arr c@(x,y) = case arr ! c of
-  Live -> case numLiveNeighbors arr c of
+judgeCell arr coords = case arr ! coords of
+  Live -> case numLiveNeighbors arr coords of
     2 -> Live
     3 -> Live
     otherwise -> Dead
-  Dead -> case numLiveNeighbors arr c of
+  Dead -> case numLiveNeighbors arr coords of
     3 -> Live
     otherwise -> Dead
 
 -- | given a 'LifeBoard, compute its next generation
-evolveArr :: LifeBoard -> LifeBoard
-evolveArr arr =  array ((0,0),(width,height)) 
-                  [ ((x,y),c) | x <- [0..width], 
-                                y <- [0..height],
-                                let c = judgeCell arr (x,y)  ]
+evolveBoard :: LifeBoard -> LifeBoard
+evolveBoard arr =  array ((0,0),(width,height)) 
+                     [ ((x,y),c) | x <- [0..width], 
+                                   y <- [0..height],
+                                   let c = judgeCell arr (x,y)
+                      ]
                   where
                     width  = arrWidth arr
                     height = arrHeight arr
@@ -63,9 +65,9 @@ evolveArr arr =  array ((0,0),(width,height))
 -- | returns a potentially-infinite list of arrays of 'LifeBoard's
 -- each array being a subsequent generation evolved from 'seed'
 allTheStates :: LifeBoard -> [LifeBoard]
-allTheStates seed = iterate evolveArr seed
+allTheStates seed = iterate evolveBoard seed
 
--- | a little hacky. pretty-printer for arrays
+-- | a little hacky. pretty-printer for 'LifeBoard'.
 printArr  :: LifeBoard -> String 
 printArr arr = unlines [unwords [show (arr ! (x, y)) | x <- [0..(arrWidth arr)]] | y <- [0..(arrHeight arr)]]
 
@@ -77,6 +79,7 @@ printN n seed = mapM_ putStrLn $ map (printArr) (take n $ allTheStates seed)
 
 -- examples & tests & stuff!!!
 
+-- | initializes a new board of size x by y full of dead cells
 deadBoard :: Int -> Int -> LifeBoard
 deadBoard x y = array ((0,0),(x,y)) [((i,j),Dead) | i<-[0..x],j<-[0..y]  ]
 
