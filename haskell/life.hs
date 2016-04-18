@@ -16,7 +16,7 @@ instance Show Cell where
   show Dead = " "
 
 -- | stupid helper functions that should be built-in
-arrWidth a  = fst . snd $ bounds a
+arrWidth  a = fst . snd $ bounds a
 arrHeight a = snd . snd $ bounds a
 
 -- | given a 'LifeBoard' and coordinates, return a list of the coordinates of all the neighbors
