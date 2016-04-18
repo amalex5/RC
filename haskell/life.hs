@@ -1,4 +1,6 @@
 -- the game of life in haskell!!!
+-- with sweet type-aliasing
+-- and no hand-coded neighbor enumerating!
 
 import Data.Array
 
@@ -10,13 +12,16 @@ data Cell = Live | Dead
   deriving (Eq)
 
 instance Show Cell where
-	show Live = "#"
-	show Dead = " "
+  show Live = "#"
+  show Dead = " "
 
-
+-- | stupid helper functions that should be built-in
 arrWidth a  = fst . snd $ bounds a
 arrHeight a = snd . snd $ bounds a
 
+-- | given a 'LifeBoard' and coordinates, return a list of the coordinates of all the neighbors
+-- this function is my favorite part of this code :)
+-- no hand-enumeration!
 neighborCoords ::  LifeBoard -> Coords -> [Coords]
 neighborCoords arr (x,y) = [ (i,j) | i <- perms (arrWidth  arr) x,
                                      j <- perms (arrHeight arr) y,
@@ -24,13 +29,15 @@ neighborCoords arr (x,y) = [ (i,j) | i <- perms (arrWidth  arr) x,
                                 ]
                             where perms size var = map (\x -> (x+var) `mod` size) [-1..1]
 
+-- | given a 'LifeBoard' and some coordinates, return a list of the live/deadness of the neighboring cells
 neighborContents :: LifeBoard -> Coords -> [Cell]
 neighborContents arr (x,y) = map (arr!) (neighborCoords arr (x,y))
 
+-- | given a 'LifeBoard' and the coordinates of one of its cells, return the number of live neighbors
 numLiveNeighbors :: LifeBoard -> Coords -> Int
 numLiveNeighbors arr (x,y) = length (filter (\x -> x == Live) (neighborContents arr (x,y)))
 
--- | Given an array representing a Game of Life board, and the coordinates of one of its cells
+-- | given a 'LifeBoard;, and the coordinates of one of its cells
 -- determine whether that cell lives or dies in the next generation
 judgeCell :: LifeBoard -> Coords -> Cell
 judgeCell arr c@(x,y) = case arr ! c of
@@ -42,8 +49,7 @@ judgeCell arr c@(x,y) = case arr ! c of
     3 -> Live
     otherwise -> Dead
 
--- | Given an array representing a Game of Life board,
--- compute the next generation
+-- | given a 'LifeBoard, compute its next generation
 evolveArr :: LifeBoard -> LifeBoard
 evolveArr arr =  array ((0,0),(width,height)) 
                   [ ((x,y),c) | x <- [0..width], 
@@ -53,16 +59,16 @@ evolveArr arr =  array ((0,0),(width,height))
                     width  = arrWidth arr
                     height = arrHeight arr
 
--- | Returns a potentially-infinite list of arrays
--- each array being a subsequent generation of the Game of Life evolved from 'seed'
+-- | returns a potentially-infinite list of arrays of 'LifeBoard's
+-- each array being a subsequent generation evolved from 'seed'
 allTheStates :: LifeBoard -> [LifeBoard]
 allTheStates seed = iterate evolveArr seed
 
--- | A little hacky. Pretty-printer for arrays
+-- | a little hacky. pretty-printer for arrays
 printArr  :: LifeBoard -> String 
 printArr arr = unlines [unwords [show (arr ! (x, y)) | x <- [0..(arrWidth arr)]] | y <- [0..(arrHeight arr)]]
 
--- | Prints the first 'n' generations of the Game of Life, starting with 'seed'
+-- | print the first 'n' generations of the Game of Life, starting with 'seed'
 printN :: Int -> LifeBoard -> IO ()
 printN n seed = mapM_ putStrLn $ map (printArr) (take n $ allTheStates seed)
 
