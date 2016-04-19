@@ -16,7 +16,7 @@ instance Show Cell where
   show Dead = " "
 
 -- | stupid helper functions that should be built-in
-arrWidth  a = fst . snd $ bounds a
+arrWidth  a = fst . snd $ bounds a 
 arrHeight a = snd . snd $ bounds a
 
 -- | given a 'LifeBoard' and coordinates, return a list of the coordinates of all the neighbors
@@ -53,7 +53,7 @@ judgeCell arr coords = case arr ! coords of
 
 -- | given a 'LifeBoard, compute its next generation
 evolveBoard :: LifeBoard -> LifeBoard
-evolveBoard arr =  array ((0,0),(width,height)) 
+evolveBoard arr = array ((0,0),(width,height)) 
                      [ ((x,y),c) | x <- [0..width], 
                                    y <- [0..height],
                                    let c = judgeCell arr (x,y)
@@ -88,7 +88,6 @@ spinnerExample = (deadBoard 15 15) // [ ((2,3),Live),
                                         ((2,5),Live) 
                                       ]
 
-gliderExample :: LifeBoard
 gliderExample = (deadBoard 15 15) // [ ((1,0), Live),
                                        ((2,1), Live),
                                        ((0,2), Live),
