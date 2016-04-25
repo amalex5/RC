@@ -1,0 +1,93 @@
+pseudocode for hashlife
+
+data Quadcell = Quadcell {nw :: Int, ne :: Int, sw :: Int, se :: Int } deriving (Show,Eq)
+
+
+data Macrocell = Quadcell | Macrocell {nw :: Macrocell,  ne :: Macrocell, sw :: Macrocell,  se :: Macrocell } deriving (Show,Eq)
+
+result :: Macrocell -> Macrocell
+result m = 
+
+m = Macrocell 2^n  {
+	nw : Macrocell 2^(n-1)2
+	ne : Macrocell 2^(n-1)
+	sw : Macrocell 2^(n-1)
+	se : Macrocell 2^(n-1)
+  }
+
+m.result = Macrocell 2^(n-1)  {
+	nw: Macrocell 2^(n-2) {
+			nw: m.nw.result.se
+			ne: m.nn.result.sw
+			sw: m.ww.result.ne
+			se: m.cc.result.nw
+		} 
+	ne: Macrocell 2^(n-2) {
+			nw: m.nn.result.se
+			ne: m.ne.result.sw
+			sw: m.cc.result.ne
+			se: m.ee.result.nw
+		} 
+	sw: Macrocell 2^(n-2) {
+			nw: m.ww.result.se
+			ne: m.cc.result.sw
+			sw: m.sw.result.ne
+			se: m.ss.result.nw
+		} 
+	se: Macrocell 2^(n-2) {
+			nw: m.cc.result.se
+			ne: m.ee.result.sw
+			sw: m.ss.result.ne
+			se: m.se.result.nw
+		} 
+}
+
+-- i'm sure there's some pretty way of expressing geometrical permutations
+-- that could concisely represent all of these offset cells (nn,ww,ee,ss,cc)
+-- rather than writing it all out by hand
+
+m.nn = Macrocell 2^(n-1) {
+	nw: m.nw.ne
+	ne: m.ne.nw  
+	sw: m.nw.se 
+	se: m.ne.sw
+}
+
+m.ww = Macrocell 2^(n-1) {
+	nw: m.nw.sw
+	ne: m.nw.se
+	sw: m.sw.nw
+	se: m.sw.ne
+}
+
+m.ss = Macrocell 2^(n-1) {
+	nw: m.sw.ne
+	ne: m.se.nw
+	sw: m.sw.se
+	se: m.se.sw
+}
+
+m.ee = Macrocell 2^(n-1) {
+	nw: m.ne.sw
+	ne: m.ne.se
+	sw: m.se.nw
+	se: m.se.ne
+}
+
+m.cc = Macrocell 2^(n-1) {
+	nw: m.nw.se
+	ne: m.ne.sw
+	sw: m.sw.ne
+	se: m.se.nw
+}
+
+-- when does the recursion bottom out?
+-- since macrocell of size 2^n requires other macrocell of size 2^(n-2)
+-- and since the smallest macrocell that can have a result is a 4x4
+-- erm
+-- so we hard-code in all the 4x4 macrocells
+-- all 2^(16) = 65K of them
+
+
+
+

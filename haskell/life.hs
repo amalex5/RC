@@ -26,8 +26,7 @@ arrHeight a = snd . snd $ bounds a
 neighborCoords ::  LifeBoard -> Coords -> [Coords]
 neighborCoords arr (x,y) = [ (i,j) | i <- perms (arrWidth  arr) x,
                                      j <- perms (arrHeight arr) y,
-                                     (i,j) /= (x,y)
-                                ]
+                                     (i,j) /= (x,y)  ]
                             where perms size var = map (\x -> (x+var) `mod` size) [-1..1]
 
 -- | given a 'LifeBoard' and some coordinates, return a list of the live/deadness of the neighboring cells
@@ -88,10 +87,10 @@ spinnerExample = (deadBoard 15 15) // [ ((2,3),Live),
                                         ((2,5),Live) 
                                       ]
 
-gliderExample = (deadBoard 15 15) // [ ((1,0), Live),
-                                       ((2,1), Live),
-                                       ((0,2), Live),
-                                       ((1,2), Live),
-                                       ((2,2), Live)
+gliderExample = (deadBoard 15 15) // [ ((3,1), Live),
+                                       ((5,2), Live),
+                                       ((3,3), Live),
+                                       ((4,3), Live),
+                                       ((5,3), Live)
                                       ]
 
