@@ -1,15 +1,8 @@
 pseudocode for hashlife
 
-data Quadcell = Quadcell {nw :: Int, ne :: Int, sw :: Int, se :: Int } deriving (Show,Eq)
-
-
-data Macrocell = Quadcell | Macrocell {nw :: Macrocell,  ne :: Macrocell, sw :: Macrocell,  se :: Macrocell } deriving (Show,Eq)
-
-result :: Macrocell -> Macrocell
-result m = 
 
 m = Macrocell 2^n  {
-	nw : Macrocell 2^(n-1)2
+	nw : Macrocell 2^(n-1)
 	ne : Macrocell 2^(n-1)
 	sw : Macrocell 2^(n-1)
 	se : Macrocell 2^(n-1)

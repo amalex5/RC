@@ -1,0 +1,301 @@
+<html>
+<head>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+<style>
+
+.label-text {
+  font: 24px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+
+</style>
+</head>
+<body>
+hi!
+
+<script>
+
+var cardinalDirections = ["NW","NE","SW","SE"]
+var offsetDirections = ["NN","WW","SS","EE","CC"]
+
+//Make an SVG Container
+ // var svgContainer = d3.select("body").append("svg")
+ //                                     .attr("width", 600)
+ //                                     .attr("height", 600);
+ 
+ //Draw the Rectangle
+//var rects = 
+
+ var rectangle = function (x,y,width,height,color,direc) { 
+ 							svgContainer.append("rect")
+                            .attr("x", x)
+                            .attr("y", y)
+                            .attr("width", width)
+                            .attr("height", height)
+                            .attr("fill",color)
+                            .attr("fill-opacity",0.4)
+                            .attr("class",direc)
+
+                        svgContainer.append("text")
+    						.attr("x", x)
+   							.attr("y", y)
+    						.attr("dy", ".5em")
+    						.attr("class","label-text")
+    						//.text(direc);
+                        };
+
+
+
+var offsets = function (direc,outerX,outerY,outerSide,padding){
+	var x = outerX + padding
+	var y = outerY + padding
+	var innerWidth = (outerSide - (3 * padding)) / 2
+	switch (direc){
+		case "NW": 
+			break
+		case "NE": 
+			x += (innerWidth + padding)
+			break
+		case "SW": 
+			y += (innerWidth + padding)
+			break
+		case "SE": 
+			x += (innerWidth + padding);
+			y += (innerWidth + padding);
+			break
+		case "NN":
+			x += innerWidth/2 + padding/2
+			break
+		case "WW":
+			y += innerWidth/2 + padding/2
+			break
+		case "SS":
+			x += innerWidth/2 + padding/2
+			y += (innerWidth + padding);
+			break
+		case "EE":
+			x += (innerWidth + padding);
+			y += innerWidth/2 + padding/2
+			break
+		case "CC":
+			x += innerWidth/2 + padding/2
+			y += innerWidth/2 + padding/2
+			break
+	}
+	return {x:x,y:y,width:innerWidth}
+}
+
+	var createKids = function (size,x,y,direc,depth){
+		if (depth == 0) {
+			console.log("fake breaking!");
+			}
+		else {
+			//parent
+			var thisArr = { cx: x,
+							cy: y,
+							size: size,
+							level: depth,
+							direc: direc,
+							children : []
+							}
+
+			// kids
+			for (var i in cardinalDirections){
+				var newDirec = cardinalDirections[i]
+				var newGeom = offsets(newDirec,x,y,size,5)
+
+				thisArr.children.push( createKids(newGeom.width,newGeom.x,newGeom.y,newDirec,depth-1)  )
+				}
+			return thisArr
+			
+			}
+	}
+
+	var matrix = [
+  [ 0,  1,  2,  3],
+  [ 4,  5,  6,  7],
+  [ 8,  9, 10, 11],
+  [12, 13, 14, 15],
+];
+
+// var table = d3.select('body').append('table');
+ 
+// var tr = table.selectAll('tr')
+//     .data(matrix).enter()
+//     .append('tr');
+
+// tr.append('td').html(function(d) { console.log(d); return d; });
+// // tr.append('td').html(function(m) { return m.year; });
+// // tr.append('td').html(function(m) { return m.budget; });
+
+
+var myData = [createKids(256,0,0,"m",3)] // needs to be wrapped up in a list
+
+var body = d3.select("body");
+var container = body.append("svg")
+                .attr("width", 600)
+                .attr("height", 600);
+var outer = container.selectAll("g")
+    				.data(myData)
+  					.enter()
+  					.append("g")
+  					.attr("class",function(d){return d.direc})
+
+outer.append("rect")
+		.attr("x", function(d) { return d.cx})
+		.attr("y", function(d) {return d.cy})
+		.attr("width", function(d) {return d.size})
+		.attr("height", function(d) {return d.size})
+		.attr("fill","green")
+		.attr("fill-opacity",0.4)
+		.attr("class", function(d) {return d.direc})
+
+
+  var inner = outer.selectAll("g")
+    		.data(function(d) {return d.children; })
+  			.enter()
+  			.append("g")
+  			.attr("class",function(d){return d.direc})
+  			.each(function(d) {
+  				 console.log(d)
+  				d3.select(this).selectAll("rect")
+	  				.data([d]) //it has to be wrapped up in a list even though it's a singleton!
+	  				.enter()
+	  				.append("rect")
+					.attr("x", function(d) { return d.cx})
+					.attr("y", function(d) {return d.cy})
+					.attr("width", function(d) {return d.size})
+					.attr("height", function(d) {return d.size})
+					.attr("fill","blue")
+					.attr("fill-opacity",0.4)
+					.attr("class", function(d) {return d.direc})
+
+  			})
+
+
+
+var body = d3.select("body");
+var table = body.append("table");
+var tr = table.selectAll("tr")
+    			.data(matrix)
+  				.enter()
+  				.append("tr");
+
+  var td = tr.selectAll("bloooogh")
+    		.data(function(d) { return d; })
+  			.enter()
+  			.append("bloooogh")
+  			.html(function(d) { return d; });
+
+// var td = d3.selectAll("tbody tr")
+//     .data(matrix)
+//   .selectAll("td")
+//     .data(function(d, i) { console.log(d,i); return d; })
+//     .enter()
+//     .append("td")
+//     .text("hiiii")
+
+   // d is matrix[i]
+
+
+// var rects = svgContainer.selectAll("rect")
+// 						.data(myData)
+//                         .enter()
+//                         .append("rect")
+//                         .attr("x", function(d) { return d.cx})
+//                         .attr("y", function(d) {return d.cy})
+//                         .attr("width", function(d) {return d.size})
+//                         .attr("height", function(d) {return d.size})
+//                         .attr("fill","blue")
+//                         .attr("fill-opacity",0.4)
+//                         .attr("class", function(d) {return d.direc})
+
+///var m = d3.selectAll(".m
+
+
+//  var rectangleData = [
+//    { "rx": 110, "ry": 110, "height": 30, "width": 30, "color" : "blue" },
+//    { "rx": 160, "ry": 160, "height": 30, "width": 30, "color" : "red" }];
+
+// var rectangles = svgContainer.selectAll("rect")
+//                              .data(rectangleData)
+//                              .enter()
+//                              .append("rect")
+// 							.attr("x", function (d) { return d.rx; })
+//                            .attr("y", function (d) { return d.ry; })
+//                            .attr("height", function (d) { return d.height; })
+//                            .attr("width", function (d) { return d.width; })
+//                            .style("fill", function(d) { return d.color; });
+
+// var test = function (size,depth) {
+// 	var padding = 3
+
+// 	var draw = function (size,x,y,direc,depth){
+// 		if (depth == 0) {
+// 			console.log("fake breaking!");
+// 			}
+// 		else {
+// 			//parent
+// 			var parent = rectangle(x,y,size,size,"blue",direc)
+
+// 			// kids
+// 			for (var i in cardinalDirections){
+// 				var newDirec = cardinalDirections[i]
+// 				var newStuff = offsets(newDirec,x,y,size,padding)
+// 				draw(newStuff.width,newStuff.x,newStuff.y,newDirec,depth-1)
+// 				}
+			
+// 			}
+// 	}
+
+// 	draw(size,0,0,"m",depth)
+// }
+
+// test(512,4)
+
+var bloogle = function(level,direc) {
+
+}
+
+
+// for (var i in cardinalDirections) {
+// 	var direc = cardinalDirections[i]
+// 	var stuff = offsets(direc,0,0,512,5)
+// 	rectangle(stuff.x,stuff.y,stuff.width,stuff.width,"blue",direc)
+// 	for (var j in cardinalDirections) {
+// 		var direc2 = cardinalDirections[j]
+// 		var stuff2 = offsets(direc2,stuff.x,stuff.y,stuff.width,5)
+// 		rectangle(stuff2.x,stuff2.y,stuff2.width,stuff2.width,"yellow",direc2)
+// 	}
+
+// }
+
+// var stuff3 = offsets("CC",0,0,300,5)
+// rectangle(stuff3.x,stuff3.y,stuff3.width,stuff3.width,"red","NN")
+// for (var j in cardinalDirections) {
+// 		var direc4 = cardinalDirections[j]
+// 		var stuff4 = offsets(direc4,stuff3.x,stuff3.y,stuff3.width,5)
+// 		rectangle(stuff4.x,stuff4.y,stuff4.width,stuff4.width,"purple",direc4)
+// 	}
+// console.log(offsets("SW",0,0,200,10))
+
+// rectangle(0,0,200,200,"yellow")
+
+// rectangle(10,10,85,85,"blue")
+// rectangle(10,105,85,85,"blue")
+// rectangle(105,10,85,85,"blue")
+// rectangle(105,105,85,85,"blue")
+
+// rectangle(105,105,85,85,"purple")
+
+
+//rectangle((200-85)/2,(200-85)/2,85,85,"blue")
+
+
+
+</script>
+
+</body>
+</html>
