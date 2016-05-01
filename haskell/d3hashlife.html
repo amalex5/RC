@@ -159,6 +159,8 @@ outer.append("rect")
   			.append("g")
   			.attr("class",function(d){return d.direc})
   			.each(function(d) {
+  				// do something with apply or call or something
+  				// so you can pass the context through
   				 console.log(d)
   				d3.select(this).selectAll("rect")
 	  				.data([d]) //it has to be wrapped up in a list even though it's a singleton!
